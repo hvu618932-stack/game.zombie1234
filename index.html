@@ -76,7 +76,7 @@
       <button id="rankBtn" class="menu-btn">🏆 BẢNG XẾP HẠNG</button>
       <button id="settingsBtn" class="menu-btn">⚙️ CÀI ĐẶT</button>
     </div>
-    <div id="settingsPanel"><h2 style="text-align:center;margin:0 0 10px">⚙️ CÀI ĐẶT</h2><label><input type="checkbox" id="mobileToggle"> Bật điều khiển cảm ứng cho điện thoại</label><p style="font-size:12px;color:#b8c9b3;margin:8px 0 0">Bật để hiện cần điều khiển di chuyển và các nút TẤN CÔNG, TÚI ĐỒ, ĂN, UỐNG khi vào game.</p><div style="margin-top:12px"><label for="musicVolume" style="display:flex;justify-content:space-between">🔊 Âm lượng nhạc <b id="musicVolumeText">35%</b></label><input id="musicVolume" type="range" min="0" max="100" value="35" style="width:100%;accent-color:#70b65d"><p style="font-size:12px;color:#b8c9b3;margin:4px 0">Ngày 1–94: nhạc chill, không khí sinh tồn. Từ ngày 95: nhạc dồn dập cho trận chiến cuối.</p></div><div style="text-align:center;margin-top:12px"><button id="settingsClose">ĐÓNG</button></div></div>
+    <div id="settingsPanel"><h2 style="text-align:center;margin:0 0 10px">⚙️ CÀI ĐẶT</h2><label><input type="checkbox" id="mobileToggle"> 📱 Chế độ điện thoại (điều khiển cảm ứng)</label><p style="font-size:12px;color:#b8c9b3;margin:8px 0 0">Bật mục này để hiện cần điều khiển và các nút BẮN, TÚI ĐỒ, ĂN, UỐNG khi chơi trên điện thoại. Tắt để chơi bằng bàn phím/chuột.</p><div style="margin-top:12px"><label for="musicVolume" style="display:flex;justify-content:space-between">🔊 Âm lượng nhạc <b id="musicVolumeText">35%</b></label><input id="musicVolume" type="range" min="0" max="100" value="35" style="width:100%;accent-color:#70b65d"><p style="font-size:12px;color:#b8c9b3;margin:4px 0">Ngày 1–94: nhạc chill, không khí sinh tồn. Từ ngày 95: nhạc dồn dập cho trận chiến cuối.</p></div><div style="text-align:center;margin-top:12px"><button id="settingsClose">ĐÓNG</button></div></div>
     <div id="leaderboard"><h2>🏆 BẢNG XẾP HẠNG</h2><ol id="rankList"></ol><div id="rankEmpty" style="text-align:center;color:#b8c9b3;display:none">Chưa có thành tích. Hãy chơi và lập kỷ lục!</div></div>
     <div style="margin-top:22px;color:#879b83;font-size:12px">WASD di chuyển · Giữ chuột trái để bắn · E chế tạo</div>
   </div>
@@ -570,7 +570,7 @@ $('settingsBtn').addEventListener('click',()=>{$('settingsPanel').style.display=
 $('settingsClose').addEventListener('click',()=>{$('settingsPanel').style.display='none';});
 $('mobileToggle').addEventListener('change',e=>applyMobileMode(e.target.checked));
 $('musicVolume').addEventListener('input',e=>setMusicVolume(e.target.value));
-if(('ontouchstart' in window)||navigator.maxTouchPoints>0){applyMobileMode(true);}
+applyMobileMode(false); // Chỉ bật chế độ điện thoại khi người chơi chọn trong Cài đặt.
 $('playBtn').addEventListener('click',()=>{gameStarted=true;initMusic();$('mainMenu').style.display='none';$('settingsPanel').style.display='none';$('touchControls').style.display=mobileMode?'block':'none';reset();setMusicMode('chill',true);});
 $("rankBtn").addEventListener("click",()=>{const box=$("leaderboard");box.style.display=box.style.display==="block"?"none":"block";renderLeaderboard();});
 $('restart').addEventListener('click',()=>{gameStarted=true;initMusic();$('mainMenu').style.display='none';$('center').style.display='none';$('touchControls').style.display=mobileMode?'block':'none';reset();setMusicMode('chill',true);});
