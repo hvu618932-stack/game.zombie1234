@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>100 Ngày Sống Sót Khỏi Tận Thế Zombie</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; overflow:hidden; background:#17221a; color:#fff; font-family:Arial,sans-serif; user-select:none; }
+  canvas { display:block; width:100vw; height:100vh; cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2V8 M12 16V22 M2 12H8 M16 12H22' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='3.5' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E") 12 12, crosshair; }
+  .panel { position:fixed; z-index:2; background:rgba(10,16,12,.42); border:1px solid rgba(160,190,155,.48); border-radius:10px; padding:12px; box-shadow:0 5px 20px rgba(0,0,0,.18); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
+  #stats { top:12px; left:12px; min-width:230px; pointer-events:none; }
+  .stat { display:flex; align-items:center; gap:8px; margin:6px 0; font-size:13px; }
+  .bar { width:115px; height:12px; background:#263029; border:1px solid #000; border-radius:8px; overflow:hidden; }
+  .fill { height:100%; width:100%; transition:width .08s; }
+  #hpFill{background:#f04444} #foodFill{background:#f5a623} #waterFill{background:#3a9cff} #xpFill{background:#b46cff}
+  #craft { left:12px; bottom:12px; width:280px; max-height:48vh; overflow:auto; display:none; }
+  #craft.open { display:block; }
+  #help.hidden, #stats.hidden { display:none; }
+  #craft h3,#help h3 { margin:0 0 8px; font-size:16px; }
+  .recipe { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 0; border-top:1px solid #344238; font-size:12px; }
+  button { background:#315d3d; color:white; border:1px solid #729578; border-radius:6px; padding:7px 10px; cursor:pointer; font-weight:bold; }
+  button:hover { background:#42794f; } button:disabled { opacity:.4; cursor:not-allowed; }
+  #help { right:12px; bottom:12px; max-width:255px; font-size:12px; line-height:1.5; }
+  #dayBanner { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:3; padding:9px 20px; border-radius:12px; text-align:center; min-width:150px; background:rgba(8,18,10,.62); border:1px solid rgba(211,238,180,.72); box-shadow:0 4px 18px #0005; backdrop-filter:blur(4px); pointer-events:none; }
+  #dayBanner strong { display:block; font-size:20px; letter-spacing:1px; color:#e8f7c9; text-shadow:0 2px 10px #7ab75c88; }
+  #dayBanner span { display:block; font-size:11px; color:#c8d9bc; margin-top:2px; }
+  #notice { position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:5; padding:9px 14px; border-radius:8px; background:#101810e8; border:1px solid #71866b; opacity:0; transition:opacity .2s; pointer-events:none; }
+  #center { position:fixed; inset:0; z-index:4; display:none; align-items:center; justify-content:center; background:#071008b8; }
+  #center .box { width:min(440px,90vw); padding:24px; background:#17251a; border:1px solid #6c886b; border-radius:14px; text-align:center; }
+  #center h1 { margin-top:0; }
+  #restart, #endMenuBtn { font-size:16px; padding:10px 18px; min-width:145px; }
+  .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
+  #endMenuBtn { background:#34483a; border-color:#829482; }
+  #topright { top:12px; right:12px; font-size:13px; line-height:1.6; background:rgba(10,16,12,.34); border-color:rgba(160,190,155,.38); }
+  #stats { background:rgba(10,16,12,.34); border-color:rgba(160,190,155,.38); }
+  #craft { background:rgba(10,16,12,.72); }
+  #help { background:rgba(10,16,12,.32); border-color:rgba(160,190,155,.35); }
+  #mainMenu { position:fixed; inset:0; z-index:10; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(135deg,rgba(4,12,8,.94),rgba(18,36,22,.86)),radial-gradient(circle at 50% 35%,#315b35,transparent 60%); }
+  .menu-card { width:min(620px,94vw); padding:clamp(24px,5vw,48px); text-align:center; border:1px solid #7ba875; border-radius:22px; background:rgba(9,20,12,.78); box-shadow:0 18px 70px #000b; backdrop-filter:blur(8px); }
+  .menu-kicker { color:#b8d5a9; letter-spacing:5px; font-size:12px; font-weight:bold; }
+  #mainMenu h1 { font-size:clamp(30px,6vw,54px); line-height:1.05; margin:14px 0; color:#f5f7e9; text-shadow:0 4px 24px #5b9e50; }
+  #mainMenu p { color:#c4d0c0; line-height:1.6; margin:0 auto 24px; max-width:450px; }
+  .menu-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; }
+  .menu-btn { min-width:170px; padding:13px 20px; font-size:16px; border-radius:9px; }
+  .menu-btn.primary { background:#568d43; border-color:#a9d596; }
+  #settingsPanel { display:none; margin-top:18px; padding:14px; text-align:left; border:1px solid #526e4d; border-radius:10px; background:#071009b8; color:#e4efdf; line-height:1.6; }
+  #settingsPanel label { display:flex; align-items:center; gap:10px; cursor:pointer; }
+  #settingsPanel input { width:20px; height:20px; accent-color:#70b65d; }
+  #touchControls { display:none; position:fixed; inset:0; z-index:6; pointer-events:none; touch-action:none; }
+  #stickBase { position:absolute; left:20px; bottom:24px; width:132px; height:132px; border-radius:50%; background:#17251a88; border:2px solid #d8ead080; pointer-events:auto; touch-action:none; }
+  #stickKnob { position:absolute; left:39px; top:39px; width:50px; height:50px; border-radius:50%; background:#dcebdca8; border:2px solid #fff9; }
+  .touchBtn { position:absolute; pointer-events:auto; touch-action:manipulation; border-radius:50%; width:66px; height:66px; font-size:15px; background:#1a321dcc; border:2px solid #d9f1d6aa; box-shadow:0 3px 12px #0008; }
+  #touchAttack { right:22px; bottom:42px; width:82px; height:82px; background:#8c302de0; }
+  #touchCraft { right:112px; bottom:38px; } #touchEat { right:28px; bottom:138px; } #touchDrink { right:112px; bottom:126px; }
+  @media(max-width:650px) { #dayBanner{top:8px;min-width:108px;padding:6px 12px;} #dayBanner strong{font-size:16px;} #dayBanner span{font-size:10px;} #stats{max-width:calc(100vw - 24px); min-width:0; font-size:11px} #stats .stat{font-size:11px;gap:5px} #stats .bar{width:52px} #topright{top:auto;bottom:12px;right:8px;max-width:130px;font-size:10px;padding:7px} #help{display:none} #craft{width:min(270px,72vw);max-height:55vh;bottom:10px;left:8px} .menu-btn{min-width:130px} }
+  #leaderboard { display:none; margin-top:20px; padding:14px; text-align:left; border:1px solid #526e4d; border-radius:10px; background:#071009b8; }
+  #leaderboard h2 { text-align:center; margin:0 0 10px; }
+  #leaderboard ol { margin:0; padding-left:26px; }
+  #leaderboard li { padding:5px 0; color:#e4efdf; }
+  @media(max-width:650px) { #stats{min-width:190px;padding:8px} .bar{width:85px} #craft{width:235px;max-height:40vh} #help{max-width:155px;font-size:10px} .recipe{font-size:11px} }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="dayBanner" aria-live="polite"><strong>NGÀY <b id="dayTop">1</b> / 100</strong><span id="phaseTop">BAN NGÀY</span></div>
+<div id="mainMenu">
+  <div class="menu-card">
+    <div class="menu-kicker">SINH TỒN · CHIẾN ĐẤU · SỐNG SÓT</div>
+    <h1>100 NGÀY<br>SỐNG SÓT</h1>
+    <h2 style="margin:0 0 14px;color:#a9d596;font-size:clamp(18px,3vw,25px)">KHỎI TẬN THẾ ZOMBIE</h2>
+    <p>Thu thập tài nguyên, chế tạo vũ khí, chống lại bầy zombie và sống sót đến ngày 100 để được cứu hộ.</p>
+    <div class="menu-actions">
+      <button id="playBtn" class="menu-btn primary">▶ CHƠI</button>
+      <button id="rankBtn" class="menu-btn">🏆 BẢNG XẾP HẠNG</button>
+      <button id="settingsBtn" class="menu-btn">⚙️ CÀI ĐẶT</button>
+    </div>
+    <div id="settingsPanel"><h2 style="text-align:center;margin:0 0 10px">⚙️ CÀI ĐẶT</h2><label><input type="checkbox" id="mobileToggle"> Bật điều khiển cảm ứng cho điện thoại</label><p style="font-size:12px;color:#b8c9b3;margin:8px 0 0">Bật để hiện cần điều khiển di chuyển và các nút TẤN CÔNG, TÚI ĐỒ, ĂN, UỐNG khi vào game.</p><div style="margin-top:12px"><label for="musicVolume" style="display:flex;justify-content:space-between">🔊 Âm lượng nhạc <b id="musicVolumeText">35%</b></label><input id="musicVolume" type="range" min="0" max="100" value="35" style="width:100%;accent-color:#70b65d"><p style="font-size:12px;color:#b8c9b3;margin:4px 0">Ngày 1–94: nhạc chill, không khí sinh tồn. Từ ngày 95: nhạc dồn dập cho trận chiến cuối.</p></div><div style="text-align:center;margin-top:12px"><button id="settingsClose">ĐÓNG</button></div></div>
+    <div id="leaderboard"><h2>🏆 BẢNG XẾP HẠNG</h2><ol id="rankList"></ol><div id="rankEmpty" style="text-align:center;color:#b8c9b3;display:none">Chưa có thành tích. Hãy chơi và lập kỷ lục!</div></div>
+    <div style="margin-top:22px;color:#879b83;font-size:12px">WASD di chuyển · Giữ chuột trái để bắn · E chế tạo</div>
+  </div>
+</div>
+<div id="stats" class="panel">
+  <div><b>🌲 SURVIVAL FOREST</b></div>
+  <div class="stat">Ngày <b id="day">1</b> · <span id="phase">Ban ngày</span></div>
+  <div class="stat">Máu <div class="bar"><div id="hpFill" class="fill"></div></div><span id="hpText">100</span></div>
+  <div class="stat">Đồ ăn <div class="bar"><div id="foodFill" class="fill"></div></div><span id="foodText">100</span></div>
+  <div class="stat">Nước <div class="bar"><div id="waterFill" class="fill"></div></div><span id="waterText">100</span></div>
+  <div class="stat">🎒 Táo dự trữ: <b id="appleCount">3</b> / 1000 · 🧴 Bình nước: <b id="bottleCount">3</b> / 900</div>
+  <div class="stat">Cấp <b id="level">1</b> · XP <span id="xp">0</span></div>
+  <div class="stat">🪵 Gỗ: <b id="wood">0</b>　🪨 Đá: <b id="stone">0</b>　⛓️ Sắt: <b id="metal">0</b></div>
+  <div class="stat">⚔️ Vũ khí: <b id="weapon">Tay không</b></div>
+  <div class="stat">🛡️ Giáp: <b id="armor">0%</b>　👢 Tốc độ: <b id="boots">0%</b></div>
+</div>
+<div id="topright" class="panel">Zombie còn sống: <b id="zCount">0</b> / 35<br>Hạ gục: <b id="kills">0</b><br>Giữ chuột trái: bắn liên tục</div>
+<div id="craft" class="panel">
+  <h3>🔨 Chế tạo trang bị</h3>
+  <div id="recipes"></div>
+  <div style="font-size:11px;color:#b9c9b8;margin-top:8px">Thu thập tài nguyên rồi bấm Chế tạo. Nhấn E để đóng túi đồ.</div>
+</div>
+<div id="help" class="panel">
+  <h3>Điều khiển</h3>
+  <b>W A S D</b>: di chuyển<br>
+  <b>Ctrl</b>: ẩn/hiện hướng dẫn<br>  <b>Q</b>: ẩn/hiện thanh chỉ số<br>
+  <b>E</b>: mở/đóng túi đồ chế tạo<br>
+  <b>Giữ chuột trái</b>: bắn liên tục / tấn công theo hướng chuột<br>
+  <b>Space</b>: đánh nhanh (khi sẵn sàng)<br>
+  <b>R</b>: ăn táo từ túi dự trữ (+30 đồ ăn)<br>
+  <b>F</b>: uống nước từ túi dự trữ (+35 nước)<br>
+  <b>Esc</b>: tạm dừng
+</div>
+<div id="notice"></div>
+<div id="touchControls" aria-label="Điều khiển cảm ứng"><div id="stickBase"><div id="stickKnob"></div></div><button id="touchAttack" class="touchBtn">BẮN</button><button id="touchCraft" class="touchBtn">🎒 E</button><button id="touchEat" class="touchBtn">🍎 R</button><button id="touchDrink" class="touchBtn">💧 F</button></div>
+<div id="center"><div class="box"><h1 id="endTitle">Bạn đã gục ngã!</h1><p id="endText"></p><div class="end-actions"><button id="endMenuBtn">🏠 Ra menu game</button><button id="restart">🔄 Chơi lại</button></div></div></div>
+<script>
+(() => {
+"use strict";
+const canvas = document.getElementById("game"), ctx = canvas.getContext("2d");
+const $ = id => document.getElementById(id);
+let W=innerWidth,H=innerHeight,dpr=1, last=0, elapsed=0, day=1, night=false, paused=false, gameOver=false, gameStarted=false;
+let keys={}, mouse={x:W/2,y:H/2}, mouseDown=false, objects=[], zombies=[], particles=[];
+let noticeTimer=0, kills=0, spawnTimer=0, attackCooldown=0, swing=0, lastDay=1, specialDays=new Set();
+let gunFlash=0, mobileMode=false, touchMove={x:0,y:0}, stickPointer=null, touchFiring=false;
+const recipes = [
+ {id:"sword",name:"Kiếm gỗ",cost:{wood:6,stone:2},desc:"Sát thương +12"},
+ {id:"axe",name:"Rìu chiến",cost:{wood:5,stone:4},desc:"Sát thương +20"},
+ {id:"armor",name:"Giáp gỗ",cost:{wood:8,stone:8},desc:"Giảm sát thương 35%"},
+ {id:"boots",name:"Ủng nhanh",cost:{wood:6,stone:5},desc:"Tốc độ +25%"},
+ {id:"spear",name:"Giáo đá",cost:{wood:8,stone:12},desc:"Sát thương +30, tầm đánh xa"},
+ {id:"pistol",name:"Súng lục",cost:{wood:3,stone:4,metal:5},desc:"Sát thương 28 · tầm bắn xa"},
+ {id:"m4a1",name:"M4A1",cost:{wood:5,stone:6,metal:14},desc:"Sát thương 24 · bắn nhanh"},
+ {id:"ak47",name:"AK47",cost:{wood:5,stone:8,metal:16},desc:"Sát thương 38 · bắn mạnh"},
+ {id:"shotgun",name:"Heavy Shotgun",cost:{wood:6,stone:10,metal:20},desc:"Bắn chùm · cực mạnh ở gần"}
+];
+let player, level, xp, fruit, waterFlasks;
+
+// Nhạc nền tổng hợp bằng Web Audio API, không cần tải file nhạc bên ngoài.
+let audioCtx=null, musicMaster=null, musicTimer=null, musicStep=0, musicMode="";
+let musicVolume=0.35;
+function initMusic(){
+ if(!audioCtx){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  audioCtx=new AC();
+  musicMaster=audioCtx.createGain();
+  musicMaster.gain.value=musicVolume;
+  musicMaster.connect(audioCtx.destination);
+ }
+ if(audioCtx.state==="suspended")audioCtx.resume();
+ if(!musicTimer)musicTimer=setInterval(playMusicStep,460);
+ setMusicMode(day>=95?"battle":"chill",true);
+}
+function setMusicMode(mode,force=false){
+ if(!audioCtx)return;
+ if(!force&&musicMode===mode)return;
+ musicMode=mode;musicStep=0;
+ // Chuyển nhạc êm dần, tránh tiếng bật đột ngột.
+ const now=audioCtx.currentTime;
+ musicMaster.gain.cancelScheduledValues(now);
+ musicMaster.gain.setTargetAtTime(musicVolume,now,0.35);
+}
+function tone(freq,when,duration,wave,volume,attack=0.04){
+ if(!audioCtx||!musicMaster||musicVolume<=0)return;
+ const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+ osc.type=wave;osc.frequency.setValueAtTime(freq,when);
+ gain.gain.setValueAtTime(0.0001,when);
+ gain.gain.linearRampToValueAtTime(volume,when+attack);
+ gain.gain.setTargetAtTime(0.0001,when+duration*0.65,Math.max(0.025,duration*0.12));
+ osc.connect(gain);gain.connect(musicMaster);
+ osc.start(when);osc.stop(when+duration+0.12);
+}
+function playMusicStep(){
+ if(!audioCtx||!musicMaster||!gameStarted||paused||gameOver)return;
+ const now=audioCtx.currentTime;
+ if(day>=95&&musicMode!=="battle")setMusicMode("battle");
+ if(day<95&&musicMode!=="chill")setMusicMode("chill");
+ if(musicMode==="chill"){
+  // Hợp âm chậm và nốt cao nhẹ, tạo cảm giác chill giữa rừng.
+  const chords=[[130.81,164.81,196.00],[110.00,130.81,164.81],[146.83,174.61,220.00],[98.00,123.47,146.83]];
+  const chord=chords[Math.floor(musicStep/8)%chords.length];
+  if(musicStep%4===0)chord.forEach((f,i)=>tone(f,now,2.0,"sine",0.018/(i+1),0.55));
+  const melody=[392,0,329.63,0,293.66,0,329.63,0,349.23,0,293.66,0,261.63,0,293.66,0];
+  if(melody[musicStep%melody.length])tone(melody[musicStep%melody.length],now,0.75,"sine",0.035,0.08);
+  musicStep++;
+ }else{
+  // Nhạc chiến đấu: bass đập đều, nhịp trống tổng hợp và nốt căng thẳng.
+  const beat=musicStep%4;
+  if(beat===0||beat===2)tone(55,now,0.34,"sawtooth",beat===0?0.12:0.075,0.008);
+  if(beat===1||beat===3)tone(110,now,0.12,"triangle",0.045,0.004);
+  const riff=[220,0,261.63,293.66,220,0,329.63,293.66];
+  if(riff[musicStep%riff.length])tone(riff[musicStep%riff.length],now,0.22,"sawtooth",0.035,0.008);
+  musicStep++;
+ }
+}
+function setMusicVolume(value){
+ musicVolume=Math.max(0,Math.min(1,Number(value)/100));
+ $("musicVolumeText").textContent=Math.round(musicVolume*100)+"%";
+ if(musicMaster&&audioCtx){
+  musicMaster.gain.cancelScheduledValues(audioCtx.currentTime);
+  musicMaster.gain.setTargetAtTime(musicVolume,audioCtx.currentTime,0.06);
+ }
+}
+function reset() {
+ W=innerWidth;H=innerHeight; resize();
+ elapsed=0;day=1;lastDay=1;specialDays=new Set();night=false;paused=false;gameOver=false;kills=0;spawnTimer=0;attackCooldown=0;swing=0;
+ objects=[];zombies=[];particles=[];level=1;xp=0;fruit=3;waterFlasks=3;
+ player={x:W/2,y:H/2,r:17,speed:210,hp:100,food:100,water:100,wood:0,stone:0,metal:0,weapon:"Tay không",weaponId:"fists",damage:12,armor:0,boots:0,berries:3,waterItems:3};
+ for(let i=0;i<32;i++) spawnResource();
+ for(let i=0;i<3;i++) spawnZombie(true);
+ $("center").style.display="none"; renderRecipes(); updateUI();
+}
+function resize(){dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.floor(innerWidth*dpr);canvas.height=Math.floor(innerHeight*dpr);canvas.style.width=innerWidth+"px";canvas.style.height=innerHeight+"px";ctx.setTransform(dpr,0,0,dpr,0,0);W=innerWidth;H=innerHeight;}
+addEventListener("resize",()=>{const oldW=W,oldH=H;resize();if(player){player.x=Math.min(W-player.r,Math.max(player.r,player.x+(W-oldW)/2));player.y=Math.min(H-player.r,Math.max(player.r,player.y+(H-oldH)/2));}});
+addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();keys[k]=true;
+ if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(k))e.preventDefault();
+ if(k==="control"&&!e.repeat){e.preventDefault();$("help").classList.toggle("hidden");}
+ if(k==="q"&&!e.repeat){$("stats").classList.toggle("hidden");}
+ if(k==="e"&&!e.repeat){$("craft").classList.toggle("open");if($("craft").classList.contains("open"))notify("Đã mở túi đồ chế tạo");}
+ if(k==="escape"&&!gameOver){paused=!paused;notify(paused?"Đã tạm dừng":"Tiếp tục");}
+ if(k==="r")eat();if(k==="f")drink();if(k===" "){attack(true);}
+});
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+canvas.addEventListener("mousedown",e=>{if(e.button===0){mouseDown=true;if(!paused&&!gameOver)attack(false);}});
+addEventListener("mouseup",e=>{if(e.button===0)mouseDown=false;});
+addEventListener("blur",()=>{mouseDown=false;});
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+function notify(msg){$("notice").textContent=msg;$("notice").style.opacity=1;noticeTimer=2;}
+function spawnResource(){
+ const margin=30;
+ const x=margin+Math.random()*Math.max(1,W-margin*2),y=margin+Math.random()*Math.max(1,H-margin*2);
+ const roll=Math.random(); const type=roll<.28?0:roll<.52?1:roll<.70?2:roll<.88?3:4;
+ objects.push({x,y,type,r:type<2||type===4?12:10});
+}
+const types={
+ normal:{name:"Zombie thường",color:"#35bd55",hp:38,speed:55,damage:8,r:16,xp:5},
+ thrower:{name:"Zombie ném đá",color:"#a34cda",hp:32,speed:45,damage:7,r:15,xp:8,range:250},
+ tank:{name:"Zombie Tank",color:"#f28b28",hp:125,speed:27,damage:18,r:24,xp:15},
+ fast:{name:"Zombie tốc độ",color:"#269bff",hp:24,speed:105,damage:6,r:13,xp:7},
+ boss:{name:"BOSS KHỔNG LỒ",color:"#b52121",hp:1000,speed:18,damage:20,r:34,xp:100},
+ red:{name:"Zombie Đỏ Siêu Khó",color:"#ff2424",hp:1000,speed:72,damage:10,r:28,xp:60},
+ darkblue:{name:"Zombie Xanh Đậm",color:"#063d91",hp:900,speed:48,damage:15,r:25,xp:55},
+ darkpurple:{name:"Zombie Tím Đậm Ném Đá",color:"#54106f",hp:500,speed:32,damage:30,r:23,xp:45,range:310}
+};
+function spawnZombie(initial=false){
+ const names=Object.keys(types), roll=Math.random();
+ let type=roll<.48?"normal":roll<.70?"thrower":roll<.84?"tank":"fast";
+ let x,y,side=Math.floor(Math.random()*4);
+ if(side===0){x=-25;y=Math.random()*H}else if(side===1){x=W+25;y=Math.random()*H}else if(side===2){x=Math.random()*W;y=-25}else{x=Math.random()*W;y=H+25}
+ const t=types[type], scale=1+Math.min(day-1,12)*.035;
+ zombies.push({type,x,y,r:t.r,hp:t.hp*scale,maxHp:t.hp*scale,speed:t.speed*(1+Math.min(day-1,10)*.012),damage:t.damage,attackTimer:Math.random(),throwTimer:1.5+Math.random()*1.5,flash:0,weaponSwing:0});
+}
+function spawnSpecial(type){
+ if(zombies.length>=35) zombies.shift();
+ const t=types[type];
+ const side=Math.floor(Math.random()*4);let x,y;
+ if(side===0){x=-40;y=Math.random()*H;}else if(side===1){x=W+40;y=Math.random()*H;}else if(side===2){x=Math.random()*W;y=-40;}else{x=Math.random()*W;y=H+40;}
+ zombies.push({type,x,y,r:t.r,hp:t.hp,maxHp:t.hp,speed:t.speed,damage:t.damage,attackTimer:1,throwTimer:1.2,flash:0,weaponSwing:0,projectileDamage:type==="darkpurple"?30:10});
+}
+function startDayEvent(d){
+ if(d===98&&!specialDays.has(98)){
+  specialDays.add(98);zombies.length=0;particles=particles.filter(p=>p.kind!=="rock");spawnSpecial("boss");notify("NGÀY 98: BOSS KHỔNG LỒ xuất hiện! Zombie thường đã biến mất!");
+ }
+ if(d===99&&!specialDays.has(99)){
+  specialDays.add(99);spawnSpecial("red");spawnSpecial("darkblue");spawnSpecial("darkpurple");notify("NGÀY 99: ĐẠI THẢM HỌA! Ba zombie siêu khó đã xuất hiện!");
+ }
+ if(d>=100&&!gameOver){
+  gameOver=true;paused=false;saveScore(true);$('endTitle').textContent="BẠN ĐÃ ĐƯỢC CỨU!";$('endText').textContent=`Bạn sống sót đến ngày 100 và hạ ${kills} zombie. Trực thăng cứu hộ đã đưa bạn rời khỏi khu rừng!`;$('center').style.display="flex";
+ }
+}
+function attack(quick){
+ if(attackCooldown>0||paused||gameOver)return;
+ const a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+ swing=.18;gunFlash=.09;
+ const guns={pistol:{name:"Súng lục",damage:28,range:520,cool:.34,pellets:1,spread:.025},m4a1:{name:"M4A1",damage:24,range:600,cool:.12,pellets:1,spread:.035},ak47:{name:"AK47",damage:38,range:560,cool:.19,pellets:1,spread:.07},shotgun:{name:"Heavy Shotgun",damage:18,range:300,cool:.62,pellets:7,spread:.24}};
+ const gun=guns[player.weaponId];
+ attackCooldown=gun?(quick?Math.max(.08,gun.cool*.72):gun.cool):(quick?.28:.42);
+ if(gun){
+  for(let pellet=0;pellet<gun.pellets;pellet++){
+   const ang=a+(Math.random()-.5)*gun.spread;
+   let best=null,bestDist=Infinity;
+   for(const z of zombies){
+    const dx=z.x-player.x,dy=z.y-player.y,along=dx*Math.cos(ang)+dy*Math.sin(ang);
+    if(along<0||along>gun.range)continue;
+    const side=Math.abs(dx*Math.sin(ang)-dy*Math.cos(ang));
+    if(side<z.r+5&&along<bestDist){best=z;bestDist=along;}
+   }
+   const ex=player.x+Math.cos(ang)*gun.range,ey=player.y+Math.sin(ang)*gun.range;
+   particles.push({kind:"bullet",x:player.x+Math.cos(ang)*20,y:player.y+Math.sin(ang)*20,targetX:ex,targetY:ey,life:.28,maxLife:.28,color:"#ffd21a"});
+   if(best){best.hp-=gun.damage;best.flash=.12;}
+  }
+  return;
+ }
+ const reach=player.weapon==="Giáo đá"?95:player.weapon==="Rìu chiến"?66:player.weapon==="Kiếm gỗ"?62:48;
+ for(let z of zombies){
+   const dx=z.x-player.x,dy=z.y-player.y,dist=Math.hypot(dx,dy);
+   let diff=Math.atan2(Math.sin(Math.atan2(dy,dx)-a),Math.cos(Math.atan2(dy,dx)-a));
+   if(dist<reach+z.r&&Math.abs(diff)<Math.PI*.55){
+     z.hp-=player.damage;z.flash=.12;
+     const push=player.weapon==="Rìu chiến"?24:12;z.x+=Math.cos(a)*push;z.y+=Math.sin(a)*push;
+     for(let i=0;i<4;i++)particles.push({x:z.x,y:z.y,vx:(Math.random()-.5)*100,vy:(Math.random()-.5)*100,life:.25,color:"#e8e4c8"});
+   }
+ }
+}
+function collect(){
+ for(let i=objects.length-1;i>=0;i--){const o=objects[i];if(Math.hypot(player.x-o.x,player.y-o.y)<player.r+o.r+3){
+   if(o.type===0){player.wood+=2;notify("+2 gỗ");}
+   if(o.type===1){player.stone+=2;notify("+2 đá");}
+   if(o.type===2){if(player.berries<1000){player.berries++;notify(`Nhặt được 1 quả táo (${player.berries}/1000). Nhấn R để ăn.`);}else{notify("Túi táo đã đầy (1000/1000)");continue;}}
+   if(o.type===3){if(player.waterItems<900){player.waterItems++;notify(`Nhặt được 1 bình nước (${player.waterItems}/900). Nhấn F để uống.`);}else{notify("Túi bình nước đã đầy (900/900)");continue;}}
+   if(o.type===4){player.metal+=2;notify("+2 sắt");}
+   objects.splice(i,1);
+ }}
+}
+function craft(id){
+ const rec=recipes.find(r=>r.id===id);if(!rec)return;
+ for(const [k,v] of Object.entries(rec.cost)){if(player[k]<v){notify("Không đủ tài nguyên để chế tạo!");return;}}
+ for(const [k,v] of Object.entries(rec.cost))player[k]-=v;
+ if(id==="sword"){player.weapon="Kiếm gỗ";player.weaponId="sword";player.damage=24;}
+ if(id==="axe"){player.weapon="Rìu chiến";player.weaponId="axe";player.damage=32;}
+ if(id==="armor"){player.armor=Math.min(.7,player.armor+.35);}
+ if(id==="boots"){player.boots=Math.min(.75,player.boots+.25);}
+ if(id==="spear"){player.weapon="Giáo đá";player.weaponId="spear";player.damage=42;}
+ if(id==="pistol"){player.weapon="Súng lục";player.weaponId="pistol";player.damage=28;}
+ if(id==="m4a1"){player.weapon="M4A1";player.weaponId="m4a1";player.damage=24;}
+ if(id==="ak47"){player.weapon="AK47";player.weaponId="ak47";player.damage=38;}
+ if(id==="shotgun"){player.weapon="Heavy Shotgun";player.weaponId="shotgun";player.damage=126;}
+ notify("Đã chế tạo: "+rec.name);renderRecipes();updateUI();
+}
+function renderRecipes(){
+ $("recipes").innerHTML="";
+ for(const rec of recipes){
+  const div=document.createElement("div");div.className="recipe";
+  const icons={wood:"🪵",stone:"🪨",metal:"⛓️"};const cost=Object.entries(rec.cost).map(([k,v])=>icons[k]+v).join(" ");
+  const info=document.createElement("div");info.innerHTML="<b>"+rec.name+"</b><br><span style='color:#bac9b8'>"+cost+" · "+rec.desc+"</span>";
+  const btn=document.createElement("button");btn.textContent="Chế tạo";btn.onclick=()=>craft(rec.id);
+  div.append(info,btn);$("recipes").append(div);
+ }
+}
+function eat(){if(player&&player.berries>0&&player.food<100){player.berries--;player.food=Math.min(100,player.food+30);notify(`Đã ăn 1 quả táo: +30 đồ ăn · Còn ${player.berries}/1000`);}else notify("Không có táo dự trữ hoặc thanh đồ ăn đã đầy");}
+function drink(){if(player&&player.waterItems>0&&player.water<100){player.waterItems--;player.water=Math.min(100,player.water+35);notify(`Đã uống 1 bình nước: +35 nước · Còn ${player.waterItems}/900`);}else notify("Không có bình nước dự trữ hoặc thanh nước đã đầy");}
+function updateUI(){
+ if(!player)return;
+ for(const [id,val] of [["hp",player.hp],["food",player.food],["water",player.water]]){$(id+"Fill").style.width=Math.max(0,val)+"%";$(id+"Text").textContent=Math.ceil(val);}
+ $("day").textContent=day;$("phase").textContent=night?"Ban đêm":"Ban ngày";$("dayTop").textContent=day;$("phaseTop").textContent=night?"BAN ĐÊM":"BAN NGÀY";
+ $("wood").textContent=player.wood;$("metal").textContent=player.metal;$("stone").textContent=player.stone;$("weapon").textContent=player.weapon;$("appleCount").textContent=player.berries;$("bottleCount").textContent=player.waterItems;
+ $("armor").textContent=Math.round(player.armor*100)+"%";$("boots").textContent=Math.round(player.boots*100)+"%";
+ $("level").textContent=level;$("xp").textContent=xp;$("kills").textContent=kills;$("zCount").textContent=zombies.length;
+}
+function endGame(){
+ gameOver=true;saveScore(false);$("endTitle").textContent="Bạn đã gục ngã!";$("endText").textContent=`Bạn sống sót ${day} ngày và hạ ${kills} zombie.`;$("center").style.display="flex";
+}
+function update(dt){
+ if(!gameStarted||paused||gameOver)return;
+ elapsed+=dt;attackCooldown=Math.max(0,attackCooldown-dt);swing=Math.max(0,swing-dt);gunFlash=Math.max(0,gunFlash-dt);noticeTimer-=dt;if(noticeTimer<=0)$("notice").style.opacity=0;
+ if((mouseDown||touchFiring)&&!paused&&!gameOver&&["pistol","m4a1","ak47","shotgun"].includes(player.weaponId)&&attackCooldown<=0){ if(touchFiring&&zombies.length){const target=zombies.reduce((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)<Math.hypot(a.x-player.x,a.y-player.y)?b:a,zombies[0]);mouse.x=target.x;mouse.y=target.y;} attack(false);}
+ const oldNight=night;night=(elapsed%90)>=55;
+ day=1+Math.floor(elapsed/90);
+ if(day!==lastDay){lastDay=day;setMusicMode(day>=95?"battle":"chill");if(day===95)notify("NGÀY 95: TRẬN CHIẾN CUỐI! Nhạc chiến đấu bắt đầu!");startDayEvent(day);if(gameOver)return;}
+ if(oldNight!==night){if(night){player.hp=Math.min(100,player.hp+40);notify("Đêm xuống! Hồi phục +40 máu");}else notify("Bình minh đã lên!");}
+ player.food=Math.max(0,player.food-dt*.42);player.water=Math.max(0,player.water-dt*.62);
+ if((player.food<=0||player.water<=0)&&Math.floor(elapsed*2)%2===0)player.hp=Math.max(0,player.hp-dt*3);
+ let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+touchMove.x,my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+touchMove.y;
+ if(mx||my){const n=Math.hypot(mx,my);mx/=n;my/=n;const speed=player.speed*(1+player.boots);player.x=Math.max(player.r,Math.min(W-player.r,player.x+mx*speed*dt));player.y=Math.max(player.r,Math.min(H-player.r,player.y+my*speed*dt));}
+ collect();
+ spawnTimer+=dt;const maxZ=35;const bossFight=zombies.some(z=>z.type==="boss");if(!bossFight&&day<98&&spawnTimer>(night?1.35:2.6)&&zombies.length<maxZ){spawnZombie();spawnTimer=0;}
+ for(let i=zombies.length-1;i>=0;i--){
+  const z=zombies[i],t=types[z.type];z.flash=Math.max(0,z.flash-dt);
+  const dx=player.x-z.x,dy=player.y-z.y,dist=Math.hypot(dx,dy)||1;
+  if((z.type==="thrower"||z.type==="darkpurple")&&dist<t.range){
+    z.throwTimer-=dt;
+    if(z.throwTimer<=0){particles.push({kind:"rock",x:z.x,y:z.y,targetX:player.x,targetY:player.y,life:.45,maxLife:.45,color:z.type==="darkpurple"?"#6f36a8":"#a7a7a7",damage:z.projectileDamage||10});z.throwTimer=z.type==="darkpurple"?1.6:2.2;}
+  }else{
+    z.x+=dx/dist*z.speed*dt;z.y+=dy/dist*z.speed*dt;
+  }
+  z.attackTimer-=dt;
+  if(dist<player.r+z.r+3&&z.attackTimer<=0){player.hp=Math.max(0,player.hp-z.damage*(1-player.armor));z.attackTimer=z.type==="fast"?.65:1.05;z.weaponSwing=.32;} 
+  z.weaponSwing=Math.max(0,(z.weaponSwing||0)-dt);
+  if(z.hp<=0){zombies.splice(i,1);kills++;xp+=t.xp;if(xp>=level*25){xp-=level*25;level++;player.hp=Math.min(100,player.hp+12);notify("Lên cấp "+level+"! +12 máu");}if(Math.random()<.35)objects.push({x:z.x,y:z.y,type:Math.random()<.5?0:1,r:10});}
+ }
+ for(let i=particles.length-1;i>=0;i--){
+  const p=particles[i];p.life-=dt;
+  if(p.kind==="rock"){
+   if(p.life<=0){if(Math.hypot(player.x-p.targetX,player.y-p.targetY)<player.r+18)player.hp=Math.max(0,player.hp-(p.damage||10)*(1-player.armor));}
+  }else{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.92;p.vy*=.92;}
+  if(p.life<=0)particles.splice(i,1);
+ }
+ if(objects.length<25&&Math.random()<dt*.8)spawnResource();
+ if(player.hp<=0){endGame();return;}
+ updateUI();
+}
+function drawZombie(z){
+ const t=types[z.type];ctx.save();ctx.translate(z.x,z.y);
+ // Bóng và thân zombie
+ ctx.fillStyle="#0004";ctx.beginPath();ctx.ellipse(2,z.r*.75,z.r*1.1,z.r*.45,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(0,0,z.r,0,Math.PI*2);ctx.fill();
+ // Hai tay được vẽ nổi bên ngoài thân
+ ctx.strokeStyle=t.color;ctx.lineWidth=Math.max(5,z.r*.34);ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(-z.r*.62,-z.r*.12);ctx.lineTo(-z.r*1.28,-z.r*.58);ctx.moveTo(z.r*.62,-z.r*.12);ctx.lineTo(z.r*1.28,-z.r*.58);ctx.stroke();
+ ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(-z.r*1.28,-z.r*.58,Math.max(3,z.r*.19),0,Math.PI*2);ctx.arc(z.r*1.28,-z.r*.58,Math.max(3,z.r*.19),0,Math.PI*2);ctx.fill();
+ // Mặt, hai mắt đen nhỏ dạng chấm tròn
+ ctx.fillStyle="#111";ctx.beginPath();ctx.arc(-z.r*.32,-z.r*.15,Math.max(1.8,z.r*.11),0,Math.PI*2);ctx.arc(z.r*.32,-z.r*.15,Math.max(1.8,z.r*.11),0,Math.PI*2);ctx.fill();
+ // Miệng
+ ctx.strokeStyle="#172018";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-z.r*.25,z.r*.32);ctx.lineTo(z.r*.25,z.r*.32);ctx.stroke();
+ // Vũ khí zombie nằm trên tay; dao động liên tục và vung mạnh khi tấn công.
+ const zWobble=Math.sin(elapsed*7+z.x*.035)*.10 + ((z.weaponSwing||0)>0 ? -Math.sin((z.weaponSwing/.32)*Math.PI)*.48 : 0);
+ ctx.save();ctx.translate(z.r*.82,-z.r*.48);ctx.rotate(zWobble);ctx.translate(-z.r*.82,z.r*.48);
+ ctx.lineCap="round";
+ if(z.type==="thrower"||z.type==="darkpurple"){
+   ctx.strokeStyle="#6b6254";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(z.r*.82,-z.r*.48);ctx.lineTo(z.r*1.38,-z.r*1.05);ctx.stroke();
+   ctx.fillStyle="#aaa69b";ctx.strokeStyle="#514d45";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(z.r*1.42,-z.r*1.1,5,0,Math.PI*2);ctx.fill();ctx.stroke();
+ } else if(z.type==="tank"||z.type==="boss"||z.type==="red"||z.type==="darkblue"){
+   ctx.strokeStyle="#60452d";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(z.r*.85,-z.r*.48);ctx.lineTo(z.r*1.45,-z.r*1.02);ctx.stroke();
+   ctx.fillStyle="#765234";ctx.strokeStyle="#392719";ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(z.r*1.22,-z.r*1.2,10,12,2);ctx.fill();ctx.stroke();
+ } else {
+   ctx.strokeStyle="#6c5738";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(z.r*.82,-z.r*.48);ctx.lineTo(z.r*1.24,-z.r*.92);ctx.stroke();
+   ctx.fillStyle="#b7a06b";ctx.beginPath();ctx.moveTo(z.r*1.18,-z.r*.96);ctx.lineTo(z.r*1.4,-z.r*.86);ctx.lineTo(z.r*1.24,-z.r*.72);ctx.closePath();ctx.fill();
+ }
+ ctx.restore();
+ // Tên và thanh máu cho các quái đặc biệt
+ if(["boss","red","darkblue","darkpurple"].includes(z.type)){
+  ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.fillText(t.name,0,-z.r-17);
+ }
+ // thanh máu
+ ctx.fillStyle="#301515";ctx.fillRect(-z.r,-z.r-10,z.r*2,4);ctx.fillStyle="#ff5757";ctx.fillRect(-z.r,-z.r-10,z.r*2*Math.max(0,z.hp/z.maxHp),4);
+ ctx.restore();
+}
+function drawPlayer(){
+ const a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+ ctx.save();ctx.translate(player.x,player.y);
+ ctx.fillStyle="#0004";ctx.beginPath();ctx.ellipse(2,player.r*.8,player.r*1.2,player.r*.5,0,0,Math.PI*2);ctx.fill();
+ ctx.rotate(a);
+ ctx.fillStyle=player.armor>0?"#7d9a78":"#d94b42";ctx.strokeStyle="#171717";ctx.lineWidth=2;
+ ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.stroke();
+ // Hai tay nhân vật: cánh tay và bàn tay nhỏ, hướng theo hướng đang ngắm
+ ctx.strokeStyle=player.armor>0?"#7d9a78":"#d94b42";ctx.lineWidth=7;ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(-2,-player.r*.48);ctx.lineTo(8,-player.r*1.02);ctx.moveTo(-2,player.r*.48);ctx.lineTo(8,player.r*1.02);ctx.stroke();
+ ctx.fillStyle="#f3c9a3";ctx.beginPath();ctx.arc(8,-player.r*1.02,3.5,0,Math.PI*2);ctx.arc(8,player.r*1.02,3.5,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle="#f3c9a3";ctx.beginPath();ctx.arc(4,0,player.r*.65,-Math.PI/2,Math.PI/2);ctx.fill();
+ // Hai chấm mắt đen nhỏ ở phía trước mặt
+ ctx.fillStyle="#101010";ctx.beginPath();ctx.arc(7,-5,2.3,0,Math.PI*2);ctx.arc(7,5,2.3,0,Math.PI*2);ctx.fill();
+ // Vũ khí được vẽ rõ ràng đang cầm ở tay phía trước, tùy món đã chế tạo
+ const handX=8, handY=-player.r*1.02;
+ // Vũ khí lắc nhẹ khi di chuyển và vung mạnh khi tấn công.
+ const moving=!!(keys.w||keys.a||keys.s||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright);
+ const idleWobble=moving?Math.sin(elapsed*13)*.09:Math.sin(elapsed*3)*.025;
+ const attackWobble=swing>0?(-Math.sin((swing/.18)*Math.PI)*.95):0;
+ ctx.save();ctx.translate(handX,handY);ctx.rotate(idleWobble+attackWobble);ctx.translate(-handX,-handY);
+ if(player.weapon==="Kiếm gỗ"){
+   // chuôi và lưỡi kiếm gỗ
+   ctx.strokeStyle="#654321";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(handX-2,handY+2);ctx.lineTo(handX+5,handY+9);ctx.stroke();
+   ctx.strokeStyle="#d8bd83";ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(handX+2,handY+1);ctx.lineTo(handX+player.r+17,handY-player.r*.55);ctx.stroke();
+   ctx.strokeStyle="#f0dfad";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(handX+4,handY);ctx.lineTo(handX+player.r+17,handY-player.r*.55);ctx.stroke();
+ } else if(player.weapon==="Rìu chiến"){
+   ctx.strokeStyle="#684321";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(handX-2,handY+3);ctx.lineTo(handX+player.r+16,handY-player.r*.45);ctx.stroke();
+   ctx.fillStyle="#b9bec3";ctx.strokeStyle="#555b60";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(handX+player.r*.7,handY-player.r*.25);ctx.lineTo(handX+player.r+13,handY-player.r*.95);ctx.lineTo(handX+player.r+21,handY-player.r*.62);ctx.lineTo(handX+player.r+10,handY-player.r*.15);ctx.closePath();ctx.fill();ctx.stroke();
+ } else if(player.weapon==="Giáo đá"){
+   ctx.strokeStyle="#6a4a2b";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(handX-2,handY+3);ctx.lineTo(handX+player.r+38,handY-player.r*.55);ctx.stroke();
+   ctx.fillStyle="#c4cbd0";ctx.strokeStyle="#5a6268";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(handX+player.r+31,handY-player.r*.48);ctx.lineTo(handX+player.r+45,handY-player.r*.66);ctx.lineTo(handX+player.r+40,handY-player.r*.35);ctx.closePath();ctx.fill();ctx.stroke();
+ } else if(["pistol","m4a1","ak47","shotgun"].includes(player.weaponId)){
+   // Súng vẽ trên tay, hướng theo con trỏ
+   ctx.fillStyle="#323a40";ctx.strokeStyle="#111820";ctx.lineWidth=2;
+   if(player.weaponId==="pistol"){
+    ctx.beginPath();ctx.roundRect(handX+1,handY-4,17,7,2);ctx.fill();ctx.stroke();ctx.fillStyle="#59636b";ctx.fillRect(handX+7,handY+1,5,8);ctx.fillStyle="#15191d";ctx.fillRect(handX+16,handY-2,5,3);
+   }else{
+    const len=player.weaponId==="shotgun"?30:36;
+    ctx.beginPath();ctx.roundRect(handX-1,handY-5,len,9,2);ctx.fill();ctx.stroke();ctx.fillStyle="#15191d";ctx.fillRect(handX+len-2,handY-3,10,4);
+    ctx.fillStyle=player.weaponId==="ak47"?"#76502e":"#4a555d";ctx.fillRect(handX+5,handY+3,10,7);ctx.fillStyle="#20262b";ctx.fillRect(handX+10,handY+5,5,10);
+   }
+   if(gunFlash>0){ctx.fillStyle="#ffe68a";ctx.beginPath();ctx.arc(handX+35,handY,5+Math.random()*3,0,Math.PI*2);ctx.fill();}
+ } else {
+   // Khi chưa chế tạo: tay không vẫn có nắm đấm rõ ràng
+   ctx.fillStyle="#f3c9a3";ctx.beginPath();ctx.arc(handX+3,handY+1,4,0,Math.PI*2);ctx.fill();
+ }
+ ctx.restore();
+ if(swing>0){ctx.strokeStyle="#fff9c4";ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,player.r+25,-.8,.8);ctx.stroke();}
+ ctx.restore();
+}
+function drawEnvironment(){
+ // Mỗi mốc ngày chuyển sang một khu vực mới; họa tiết được vẽ bằng canvas nên không cần tải ảnh ngoài.
+ ctx.clearRect(0,0,W,H);
+ if(day<=5){
+  // Ngày 1-5: đồng bằng xanh lá
+  ctx.fillStyle="#5d963b";ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="#548832";ctx.lineWidth=1;
+  for(let x=0;x<W;x+=70){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=70){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  for(let i=0;i<Math.ceil(W*H/18000);i++){let x=(i*137.5+31)%W,y=(i*83.7+17)%H;ctx.strokeStyle=i%2?"#79ad4b":"#477b30";ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+4,y-7);ctx.moveTo(x+2,y);ctx.lineTo(x-3,y-5);ctx.stroke();}
+ } else if(day<=25){
+  // Ngày 6-25: sa mạc vàng cam nhạt, gợn cát và đá nhỏ
+  ctx.fillStyle="#e7bd70";ctx.fillRect(0,0,W,H);
+  for(let y=24;y<H;y+=58){ctx.strokeStyle="#dca95b";ctx.lineWidth=2;ctx.beginPath();for(let x=0;x<=W;x+=18){let yy=y+Math.sin(x*.018+y*.03)*5;x===0?ctx.moveTo(x,yy):ctx.lineTo(x,yy);}ctx.stroke();}
+  for(let i=0;i<Math.ceil(W*H/28000);i++){let x=(i*193+47)%W,y=(i*127+59)%H;ctx.fillStyle="#b98b4e";ctx.beginPath();ctx.ellipse(x,y,5+(i%4),3+(i%3),i*.4,0,Math.PI*2);ctx.fill();}
+ } else if(day<=50){
+  // Ngày 26-50: đầm lầy xanh đậm, có các vệt đen
+  ctx.fillStyle="#214b36";ctx.fillRect(0,0,W,H);
+  for(let i=0;i<Math.ceil(W*H/11500);i++){let x=(i*173+29)%W,y=(i*97+61)%H;ctx.fillStyle=i%3===0?"#101d18":"#2d6242";ctx.beginPath();ctx.ellipse(x,y,10+(i%9),5+(i%6),i*.31,0,Math.PI*2);ctx.fill();}
+  ctx.strokeStyle="#356747";ctx.lineWidth=2;for(let y=35;y<H;y+=85){ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(W*.3,y-18,W*.7,y+18,W,y-3);ctx.stroke();}
+ } else if(day<=75){
+  // Ngày 51-75: hai dải đường nhựa song song, có vạch phân làn
+  ctx.fillStyle="#65834a";ctx.fillRect(0,0,W,H);
+  for(let i=0;i<Math.ceil(W*H/16000);i++){let x=(i*149+23)%W,y=(i*101+41)%H;ctx.fillStyle="#779953";ctx.beginPath();ctx.arc(x,y,2+(i%3),0,Math.PI*2);ctx.fill();}
+  const roadW=Math.min(150,W*.22),gap=Math.min(100,W*.13),center=W/2;
+  for(const cx of [center-gap/2-roadW/2,center+gap/2+roadW/2]){ctx.fillStyle="#34383b";ctx.fillRect(cx-roadW/2,0,roadW,H);ctx.fillStyle="#555a5d";ctx.fillRect(cx-roadW/2,0,5,H);ctx.fillRect(cx+roadW/2-5,0,5,H);ctx.strokeStyle="#e5d9a2";ctx.lineWidth=3;ctx.setLineDash([24,20]);ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.stroke();ctx.setLineDash([]);}
+ } else if(day<=94){
+  // Ngày 76-94: thành phố, đường nhựa và các tòa nhà ở bốn góc
+  ctx.fillStyle="#666a6d";ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#55595c";ctx.fillRect(0,H*.34,W,H*.32);ctx.fillRect(W*.34,0,W*.32,H);
+  ctx.strokeStyle="#d9d3a3";ctx.lineWidth=3;ctx.setLineDash([22,18]);ctx.beginPath();ctx.moveTo(0,H*.5);ctx.lineTo(W,H*.5);ctx.moveTo(W*.5,0);ctx.lineTo(W*.5,H);ctx.stroke();ctx.setLineDash([]);
+  const bw=Math.max(55,Math.min(125,W*.15)),bh=Math.max(55,Math.min(105,H*.2));
+  const buildings=[[8,8],[W-bw-8,8],[8,H-bh-8],[W-bw-8,H-bh-8]];
+  buildings.forEach((b,i)=>{ctx.fillStyle=["#777c83","#8a8178","#687783","#827b89"][i];ctx.fillRect(b[0],b[1],bw,bh);ctx.strokeStyle="#42474c";ctx.lineWidth=3;ctx.strokeRect(b[0],b[1],bw,bh);for(let wx=b[0]+12;wx<b[0]+bw-5;wx+=22)for(let wy=b[1]+12;wy<b[1]+bh-5;wy+=22){ctx.fillStyle="#d9c68a";ctx.fillRect(wx,wy,9,11);}});
+ } else {
+  // Ngày 95-100: sân thượng cao ốc, nơi diễn ra trận chiến cuối và được cứu
+  ctx.fillStyle="#3e454b";ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#515b62";ctx.fillRect(18,18,W-36,H-36);
+  ctx.strokeStyle="#aab2b5";ctx.lineWidth=7;ctx.strokeRect(22,22,W-44,H-44);
+  ctx.strokeStyle="#707b81";ctx.lineWidth=2;for(let x=40;x<W;x+=64){ctx.beginPath();ctx.moveTo(x,30);ctx.lineTo(x,H-30);ctx.stroke();}for(let y=40;y<H;y+=64){ctx.beginPath();ctx.moveTo(30,y);ctx.lineTo(W-30,y);ctx.stroke();}
+  // Vòng chữ H đánh dấu bãi đáp trực thăng
+  const hx=W*.76,hy=H*.27,hr=Math.min(48,Math.min(W,H)*.09);ctx.strokeStyle="#f0d34f";ctx.lineWidth=4;ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.stroke();ctx.font=`bold ${Math.max(24,hr)}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#f0d34f";ctx.fillText("H",hx,hy);ctx.textAlign="start";ctx.textBaseline="alphabetic";
+  ctx.fillStyle="#a7b1b6";ctx.font="bold 13px Arial";ctx.fillText("SÂN THƯỢNG · KHU VỰC CUỐI",32,H-34);
+ }
+}
+function draw(){
+ drawEnvironment();
+ for(const o of objects){
+  if(o.type===0){ctx.fillStyle="#9a6334";ctx.beginPath();ctx.arc(o.x,o.y,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#c58b4d";ctx.fillRect(o.x-3,o.y-9,6,18);}
+  else if(o.type===1){ctx.fillStyle="#a9adb0";ctx.beginPath();ctx.moveTo(o.x,o.y-10);ctx.lineTo(o.x+9,o.y-2);ctx.lineTo(o.x+6,o.y+8);ctx.lineTo(o.x-8,o.y+7);ctx.lineTo(o.x-10,o.y-3);ctx.closePath();ctx.fill();}
+  else if(o.type===2){ctx.fillStyle="#ff4545";ctx.beginPath();ctx.arc(o.x,o.y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#3b9b42";ctx.fillRect(o.x-2,o.y-12,4,5);}
+  else if(o.type===3){ctx.fillStyle="#36aaff";ctx.beginPath();ctx.arc(o.x,o.y,8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#d7f3ff";ctx.beginPath();ctx.arc(o.x-2,o.y-2,2,0,Math.PI*2);ctx.fill();}
+  else{ctx.fillStyle="#b8c0c8";ctx.strokeStyle="#4a535c";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x,o.y-11);ctx.lineTo(o.x+9,o.y-4);ctx.lineTo(o.x+7,o.y+7);ctx.lineTo(o.x-5,o.y+10);ctx.lineTo(o.x-11,o.y);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle="#edf1f4";ctx.fillRect(o.x-3,o.y-4,5,3);}
+ }
+ for(const p of particles){
+  if(p.kind==="rock"){const t=1-p.life/p.maxLife,x=p.x+(p.targetX-p.x)*t,y=p.y+(p.targetY-p.y)*t;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();}
+  else if(p.kind==="bullet"){const t=Math.min(1,Math.max(0,1-p.life/p.maxLife));const x=p.x+(p.targetX-p.x)*t,y=p.y+(p.targetY-p.y)*t;const trail=Math.max(0,t-.16),tx=p.x+(p.targetX-p.x)*trail,ty=p.y+(p.targetY-p.y)*trail;const alpha=Math.max(0,p.life/p.maxLife);ctx.save();ctx.globalAlpha=alpha;ctx.lineCap="round";ctx.shadowColor="#ffbf00";ctx.shadowBlur=18;ctx.strokeStyle="#ffbf00";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(x,y);ctx.stroke();ctx.shadowBlur=5;ctx.strokeStyle="#fff06a";ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(x,y);ctx.stroke();ctx.fillStyle="#fff7b0";ctx.shadowBlur=14;ctx.beginPath();ctx.arc(x,y,3.4,0,Math.PI*2);ctx.fill();ctx.restore();}
+  else{ctx.globalAlpha=Math.max(0,p.life/.25);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+ }
+ zombies.forEach(drawZombie);drawPlayer();
+ if(night){ctx.fillStyle="rgba(5,8,35,.43)";ctx.fillRect(0,0,W,H);}
+ // Mini map: chấm trắng là người chơi, chấm màu là zombie
+ const s=125,mx=W-s-18,my=H-s-18;
+ ctx.fillStyle="#142013e8";ctx.fillRect(mx,my,s,s);ctx.strokeStyle="#e9d66b";ctx.lineWidth=2;ctx.strokeRect(mx,my,s,s);
+ ctx.fillStyle="#fff";ctx.font="bold 11px Arial";ctx.fillText("BẢN ĐỒ NHỎ",mx+7,my+14);
+ for(const z of zombies){ctx.fillStyle=types[z.type].color;ctx.fillRect(mx+z.x/W*s-2,my+z.y/H*s-2,4,4);}
+ ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(mx+player.x/W*s,my+player.y/H*s,4,0,Math.PI*2);ctx.fill();
+}
+function getScores(){try{return JSON.parse(localStorage.getItem("zombie100Leaderboard")||"[]")}catch(e){return []}}
+function saveScore(won){
+ const score={day:won?100:day,kills:kills,won:!!won,date:new Date().toLocaleDateString("vi-VN")};
+ const scores=getScores();scores.push(score);scores.sort((a,b)=>(Number(b.won)-Number(a.won))||(b.day-a.day)||(b.kills-a.kills));
+ try{localStorage.setItem("zombie100Leaderboard",JSON.stringify(scores.slice(0,10)))}catch(e){}
+}
+function renderLeaderboard(){
+ const scores=getScores(),list=$("rankList"),empty=$("rankEmpty");list.innerHTML="";empty.style.display=scores.length?"none":"block";
+ scores.forEach((s,i)=>{const li=document.createElement("li");li.textContent=`${s.won?"🏆 Chiến thắng":"Ngày "+s.day} — ${s.kills} zombie · ${s.date}`;list.appendChild(li);});
+}
+// Vòng lặp game: cập nhật trạng thái và vẽ lại mỗi khung hình.
+function frame(timestamp){
+ if(!last) last=timestamp;
+ const dt=Math.min(0.05,Math.max(0,(timestamp-last)/1000));
+ last=timestamp;
+ update(dt);
+ draw();
+ requestAnimationFrame(frame);
+}
+function applyMobileMode(on){mobileMode=!!on;$('touchControls').style.display=mobileMode?'block':'none';$('mobileToggle').checked=mobileMode;}
+$('settingsBtn').addEventListener('click',()=>{$('settingsPanel').style.display=$('settingsPanel').style.display==='block'?'none':'block';});
+$('settingsClose').addEventListener('click',()=>{$('settingsPanel').style.display='none';});
+$('mobileToggle').addEventListener('change',e=>applyMobileMode(e.target.checked));
+$('musicVolume').addEventListener('input',e=>setMusicVolume(e.target.value));
+if(('ontouchstart' in window)||navigator.maxTouchPoints>0){applyMobileMode(true);}
+$('playBtn').addEventListener('click',()=>{gameStarted=true;initMusic();$('mainMenu').style.display='none';$('settingsPanel').style.display='none';$('touchControls').style.display=mobileMode?'block':'none';reset();setMusicMode('chill',true);});
+$("rankBtn").addEventListener("click",()=>{const box=$("leaderboard");box.style.display=box.style.display==="block"?"none":"block";renderLeaderboard();});
+$('restart').addEventListener('click',()=>{gameStarted=true;initMusic();$('mainMenu').style.display='none';$('center').style.display='none';$('touchControls').style.display=mobileMode?'block':'none';reset();setMusicMode('chill',true);});
+$('endMenuBtn').addEventListener('click',()=>{gameStarted=false;paused=false;gameOver=false;mouseDown=false;touchFiring=false;keys={};$('center').style.display='none';$('mainMenu').style.display='flex';$('settingsPanel').style.display='none';$('leaderboard').style.display='none';$('touchControls').style.display='none';$('craft').classList.remove('open');$('dayTop').textContent='1';$('phaseTop').textContent='BAN NGÀY';});
+// Touch joystick: virtual stick moves the survivor in any direction.
+const stickBase=$('stickBase'),stickKnob=$('stickKnob');
+function moveStick(e){const r=stickBase.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const max=43,len=Math.hypot(dx,dy)||1;if(len>max){dx=dx/len*max;dy=dy/len*max;}touchMove={x:dx/max,y:dy/max};stickKnob.style.transform=`translate(${dx}px,${dy}px)`;}
+stickBase.addEventListener('pointerdown',e=>{e.preventDefault();stickPointer=e.pointerId;stickBase.setPointerCapture(e.pointerId);moveStick(e);});
+stickBase.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer)moveStick(e);});
+function releaseStick(e){if(e.pointerId===stickPointer){stickPointer=null;touchMove={x:0,y:0};stickKnob.style.transform='translate(0,0)';}}
+stickBase.addEventListener('pointerup',releaseStick);stickBase.addEventListener('pointercancel',releaseStick);
+$('touchAttack').addEventListener('pointerdown',e=>{e.preventDefault();touchFiring=true;if(!paused&&!gameOver){if(zombies.length){const target=zombies.reduce((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)<Math.hypot(a.x-player.x,a.y-player.y)?b:a,zombies[0]);mouse.x=target.x;mouse.y=target.y;}attack(false);}});
+for(const ev of ['pointerup','pointercancel','pointerleave'])$('touchAttack').addEventListener(ev,()=>touchFiring=false);
+$('touchCraft').addEventListener('click',()=>{$('craft').classList.toggle('open');});$('touchEat').addEventListener('click',eat);$('touchDrink').addEventListener('click',drink);
+reset();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
